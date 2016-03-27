@@ -30,6 +30,7 @@ func TestDefaultHash(t *testing.T) {
 
 type testEntry struct {
 	hash  uint32
+	key   int
 	value int
 }
 
@@ -38,7 +39,7 @@ func (e *testEntry) KeyHash() uint32 {
 }
 
 func (e *testEntry) Key() interface{} {
-	return e.value
+	return e.key
 }
 
 func (e *testEntry) Value() interface{} {
@@ -53,7 +54,7 @@ func TestInsert(t *testing.T) {
 	n := emptyNode(0, 32)
 	start := time.Now()
 	for i := 0; i < 10000000; i++ {
-		n = insert(n, &testEntry{hash(i), i})
+		n = insert(n, &testEntry{hash(i), i, i})
 	}
 	t.Logf("10M insertions: %v\n", time.Since(start))
 }
@@ -61,7 +62,7 @@ func TestInsert(t *testing.T) {
 func BenchmarkInsert(b *testing.B) {
 	n := emptyNode(0, 32)
 	for i := b.N; i > 0; i-- {
-		n = insert(n, &testEntry{hash(i), i})
+		n = insert(n, &testEntry{hash(i), i, i})
 	}
 	b.ReportAllocs()
 }
@@ -69,7 +70,7 @@ func BenchmarkInsert(b *testing.B) {
 func TestGet(t *testing.T) {
 	n := emptyNode(0, 32)
 	for i := 0; i < 10000000; i++ {
-		n = insert(n, &testEntry{hash(i), i})
+		n = insert(n, &testEntry{hash(i), i, i})
 	}
 	getBenchNode = n
 	start := time.Now()
@@ -79,7 +80,7 @@ func TestGet(t *testing.T) {
 			t.Fatalf("%v not found", i)
 		}
 	}
-	t.Logf("10M gets:\t   %v\n", time.Since(start))
+	t.Logf("10M gets:\t  %v\n", time.Since(start))
 }
 
 var getBenchNode *node
@@ -94,7 +95,7 @@ func BenchmarkGet(b *testing.B) {
 func TestRemove(t *testing.T) {
 	n := emptyNode(0, 32)
 	for i := 0; i < 10000000; i++ {
-		n = insert(n, &testEntry{hash(i), i})
+		n = insert(n, &testEntry{hash(i), i, i})
 	}
 	deleteBenchNode = n
 	start := time.Now()
@@ -116,4 +117,41 @@ func BenchmarkRemove(b *testing.B) {
 		deleteBenchNode = remove(deleteBenchNode, hash(i), i)
 	}
 	b.ReportAllocs()
+}
+
+func TestUpdate(t *testing.T) {
+	n := emptyNode(0, 32)
+	for i := 0; i < 10000000; i++ {
+		n = insert(n, &testEntry{hash(i), i, i})
+	}
+	updateBenchNode = n
+	start := time.Now()
+	for i := 0; i < 10000000; i++ {
+		n = insert(n, &testEntry{hash(i), i, -i})
+	}
+	t.Logf("10M updates:   %v\n", time.Since(start))
+}
+
+var updateBenchNode *node
+
+func BenchmarkUpdate(b *testing.B) {
+	for i := b.N; i > 0; i-- {
+		updateBenchNode = insert(updateBenchNode, &testEntry{hash(i), i, -i})
+	}
+}
+
+func TestIterate(t *testing.T) {
+	n := emptyNode(0, 32)
+	for i := 0; i < 10000000; i++ {
+		n = insert(n, &testEntry{hash(i), i, i})
+	}
+	stop := make(chan struct{})
+	echan := iterate(n, stop)
+	c := 0
+	start := time.Now()
+	for range echan {
+		c++
+	}
+	assert.Equal(t, 10000000, c)
+	t.Logf("10M iterations: %v\n", time.Since(start))
 }

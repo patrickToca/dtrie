@@ -1,6 +1,9 @@
 package dtrie
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 type node struct {
 	entries []Entry
@@ -42,14 +45,18 @@ func emptyNode(level uint32, capacity int) *node {
 
 func insert(n *node, entry Entry) *node {
 	index := mask(entry.KeyHash(), n.level)
-	if n.level == 6 { // handle hash collisions on 6th level
-		newNode := n
-		if n.entries[index] == nil {
+	newNode := n
+	if newNode.level == 6 { // handle hash collisions on 6th level
+		if newNode.entries[index] == nil {
 			newNode.entries[index] = entry
 			newNode.dataMap = setBit(newNode.dataMap, index)
 			return newNode
 		}
 		if hasBit(newNode.dataMap, index) {
+			if newNode.entries[index].Key() == entry.Key() {
+				newNode.entries[index] = entry
+				return newNode
+			}
 			cNode := &collisionNode{entries: make([]Entry, 2)}
 			cNode.entries[0] = newNode.entries[index]
 			cNode.entries[1] = entry
@@ -61,18 +68,19 @@ func insert(n *node, entry Entry) *node {
 		cNode.entries = append(cNode.entries, entry)
 		return newNode
 	}
-	if !hasBit(n.dataMap, index) && !hasBit(n.nodeMap, index) { // insert directly
-		newNode := n
+	if !hasBit(newNode.dataMap, index) && !hasBit(newNode.nodeMap, index) { // insert directly
 		newNode.entries[index] = entry
 		newNode.dataMap = setBit(newNode.dataMap, index)
 		return newNode
 	}
-	if hasBit(n.nodeMap, index) { // insert into sub-node
-		newNode := n
+	if hasBit(newNode.nodeMap, index) { // insert into sub-node
 		newNode.entries[index] = insert(newNode.entries[index].(*node), entry)
 		return newNode
 	}
-	newNode := n
+	if newNode.entries[index].Key() == entry.Key() {
+		newNode.entries[index] = entry
+		return newNode
+	}
 	// create new node with the new and exisiting entries
 	var subNode *node
 	if newNode.level == 5 { // only 2 bits left at level 6 (4 possible indicies)
@@ -91,19 +99,17 @@ func insert(n *node, entry Entry) *node {
 // returns nil if not found
 func get(n *node, keyHash uint32, key interface{}) Entry {
 	index := mask(keyHash, n.level)
+	if hasBit(n.dataMap, index) {
+		return n.entries[index]
+	}
 	if n.level == 6 { // get from collisionNode
-		if hasBit(n.dataMap, index) {
-			return n.entries[index]
-		}
 		cNode := n.entries[index].(*collisionNode)
 		for _, e := range cNode.entries {
 			if e.Key() == key {
 				return e
 			}
 		}
-	}
-	if hasBit(n.dataMap, index) {
-		return n.entries[index]
+		return nil
 	}
 	if hasBit(n.nodeMap, index) {
 		return get(n.entries[index].(*node), keyHash, key)
@@ -113,13 +119,13 @@ func get(n *node, keyHash uint32, key interface{}) Entry {
 
 func remove(n *node, keyHash uint32, key interface{}) *node {
 	index := mask(keyHash, n.level)
+	newNode := n
+	if hasBit(n.dataMap, index) {
+		newNode.entries[index] = nil
+		newNode.dataMap = clearBit(newNode.dataMap, index)
+		return newNode
+	}
 	if n.level == 6 { // delete from collisionNode
-		newNode := n
-		if hasBit(newNode.dataMap, index) {
-			newNode.entries[index] = nil
-			newNode.dataMap = clearBit(newNode.dataMap, index)
-			return newNode
-		}
 		cNode := newNode.entries[index].(*collisionNode)
 		for i, e := range cNode.entries {
 			if e.Key() == key {
@@ -129,14 +135,7 @@ func remove(n *node, keyHash uint32, key interface{}) *node {
 		}
 		return newNode
 	}
-	if hasBit(n.dataMap, index) {
-		newNode := n
-		newNode.entries[index] = nil
-		newNode.dataMap = clearBit(newNode.dataMap, index)
-		return newNode
-	}
 	if hasBit(n.nodeMap, index) {
-		newNode := n
 		subNode := newNode.entries[index].(*node)
 		subNode = remove(subNode, keyHash, key)
 		// compress if only 1 entry exists in sub-node
@@ -152,7 +151,48 @@ func remove(n *node, keyHash uint32, key interface{}) *node {
 			newNode.nodeMap = clearBit(newNode.nodeMap, index)
 			newNode.dataMap = setBit(newNode.dataMap, index)
 		}
+		newNode.entries[index] = subNode
 		return newNode
 	}
 	return n
+}
+
+func iterate(n *node, stop <-chan struct{}) <-chan Entry {
+	out := make(chan Entry)
+	go func() {
+		defer close(out)
+		pushEntries(n, stop, out)
+	}()
+	return out
+}
+
+func pushEntries(n *node, stop <-chan struct{}, out chan Entry) {
+	var wg sync.WaitGroup
+	for i, e := range n.entries {
+		select {
+		case <-stop:
+			return
+		default:
+			if hasBit(n.dataMap, uint32(i)) {
+				out <- e
+			} else if hasBit(n.nodeMap, uint32(i)) {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					pushEntries(n.entries[i].(*node), stop, out)
+				}()
+			} else if n.level == 6 {
+				cNode := e.(*collisionNode)
+				for _, ce := range cNode.entries {
+					select {
+					case <-stop:
+						return
+					default:
+						out <- ce
+					}
+				}
+			}
+		}
+	}
+	wg.Wait()
 }
