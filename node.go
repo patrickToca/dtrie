@@ -102,6 +102,9 @@ func get(n *node, keyHash uint32, key interface{}) Entry {
 	if hasBit(n.dataMap, index) {
 		return n.entries[index]
 	}
+	if hasBit(n.nodeMap, index) {
+		return get(n.entries[index].(*node), keyHash, key)
+	}
 	if n.level == 6 { // get from collisionNode
 		if n.entries[index] == nil {
 			return nil
@@ -113,9 +116,6 @@ func get(n *node, keyHash uint32, key interface{}) Entry {
 			}
 		}
 	}
-	if hasBit(n.nodeMap, index) {
-		return get(n.entries[index].(*node), keyHash, key)
-	}
 	return nil
 }
 
@@ -125,21 +125,6 @@ func remove(n *node, keyHash uint32, key interface{}) *node {
 	if hasBit(n.dataMap, index) {
 		newNode.entries[index] = nil
 		newNode.dataMap = clearBit(newNode.dataMap, index)
-		return newNode
-	}
-	if n.level == 6 { // delete from collisionNode
-		cNode := newNode.entries[index].(*collisionNode)
-		for i, e := range cNode.entries {
-			if e.Key() == key {
-				cNode.entries = append(cNode.entries[:i], cNode.entries[i+1:]...)
-				break
-			}
-		}
-		// compress if only 1 entry exists in collisionNode
-		if len(cNode.entries) == 1 {
-			newNode.entries[index] = cNode.entries[0]
-			newNode.dataMap = setBit(newNode.dataMap, index)
-		}
 		return newNode
 	}
 	if hasBit(n.nodeMap, index) {
@@ -159,6 +144,21 @@ func remove(n *node, keyHash uint32, key interface{}) *node {
 			newNode.dataMap = setBit(newNode.dataMap, index)
 		}
 		newNode.entries[index] = subNode
+		return newNode
+	}
+	if n.level == 6 { // delete from collisionNode
+		cNode := newNode.entries[index].(*collisionNode)
+		for i, e := range cNode.entries {
+			if e.Key() == key {
+				cNode.entries = append(cNode.entries[:i], cNode.entries[i+1:]...)
+				break
+			}
+		}
+		// compress if only 1 entry exists in collisionNode
+		if len(cNode.entries) == 1 {
+			newNode.entries[index] = cNode.entries[0]
+			newNode.dataMap = setBit(newNode.dataMap, index)
+		}
 		return newNode
 	}
 	return n

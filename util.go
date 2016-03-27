@@ -20,19 +20,15 @@ func mask(hash, level uint32) uint32 {
 }
 
 func setBit(bitmap uint32, pos uint32) uint32 {
-	bitmap |= (1 << pos)
-	return bitmap
+	return bitmap | (1 << pos)
 }
 
 func clearBit(bitmap uint32, pos uint32) uint32 {
-	var mask uint32 = ^(1 << pos)
-	bitmap &= mask
-	return bitmap
+	return bitmap & ^(1 << pos)
 }
 
 func hasBit(bitmap uint32, pos uint32) bool {
-	val := bitmap & (1 << pos)
-	return val > 0
+	return (bitmap & (1 << pos)) != 0
 }
 
 func popCount(bitmap uint32) int {

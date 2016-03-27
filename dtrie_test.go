@@ -67,15 +67,6 @@ func insertTest(t *testing.T, hashfunc func(interface{}) uint32, count int) *nod
 	return n
 }
 
-/*
-func BenchmarkInsert(b *testing.B) {
-	n := emptyNode(0, 32)
-	for i := b.N; i > 0; i-- {
-		n = insert(n, &testEntry{hash(i), i, i})
-	}
-	b.ReportAllocs()
-}
-*/
 func TestGet(t *testing.T) {
 	getTest(t, hash, 10000)
 	getTest(t, collisionHash, 1000)
@@ -89,14 +80,6 @@ func getTest(t *testing.T, hashfunc func(interface{}) uint32, count int) {
 	}
 }
 
-/*
-func BenchmarkGet(b *testing.B) {
-	for i := b.N; i > 0; i-- {
-		get(getBenchNode, hash(i), i)
-	}
-	b.ReportAllocs()
-}
-*/
 func TestRemove(t *testing.T) {
 	removeTest(t, hash, 10000)
 	removeTest(t, collisionHash, 1000)
@@ -114,14 +97,6 @@ func removeTest(t *testing.T, hashfunc func(interface{}) uint32, count int) {
 	}
 }
 
-/*
-func BenchmarkRemove(b *testing.B) {
-	for i := b.N; i > 0; i-- {
-		deleteBenchNode = remove(deleteBenchNode, hash(i), i)
-	}
-	b.ReportAllocs()
-}
-*/
 func TestUpdate(t *testing.T) {
 	updateTest(t, hash, 10000)
 	updateTest(t, collisionHash, 1000)
@@ -134,13 +109,6 @@ func updateTest(t *testing.T, hashfunc func(interface{}) uint32, count int) {
 	}
 }
 
-/*
-func BenchmarkUpdate(b *testing.B) {
-	for i := b.N; i > 0; i-- {
-		updateBenchNode = insert(updateBenchNode, &testEntry{hash(i), i, -i})
-	}
-}
-*/
 func TestIterate(t *testing.T) {
 	n := insertTest(t, hash, 10000)
 	echan := iterate(n, nil)
@@ -170,4 +138,36 @@ func TestIterate(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, int64(1000), c)
+}
+
+func BenchmarkInsert(b *testing.B) {
+	n := emptyNode(0, 32)
+	b.ResetTimer()
+	for i := b.N; i > 0; i-- {
+		n = insert(n, &testEntry{hash(i), i, i})
+	}
+}
+
+func BenchmarkGet(b *testing.B) {
+	n := insertTest(nil, hash, b.N)
+	b.ResetTimer()
+	for i := b.N; i > 0; i-- {
+		get(n, hash(i), i)
+	}
+}
+
+func BenchmarkRemove(b *testing.B) {
+	n := insertTest(nil, hash, b.N)
+	b.ResetTimer()
+	for i := b.N; i > 0; i-- {
+		n = remove(n, hash(i), i)
+	}
+}
+
+func BenchmarkUpdate(b *testing.B) {
+	n := insertTest(nil, hash, b.N)
+	b.ResetTimer()
+	for i := b.N; i > 0; i-- {
+		n = insert(n, &testEntry{hash(i), i, -i})
+	}
 }
