@@ -135,6 +135,11 @@ func remove(n *node, keyHash uint32, key interface{}) *node {
 				break
 			}
 		}
+		// compress if only 1 entry exists in collisionNode
+		if len(cNode.entries) == 1 {
+			newNode.entries[index] = cNode.entries[0]
+			newNode.dataMap = setBit(newNode.dataMap, index)
+		}
 		return newNode
 	}
 	if hasBit(n.nodeMap, index) {

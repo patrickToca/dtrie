@@ -2,6 +2,5 @@
 Dynamic Hash Array Mapped Trie
 
 ## TODO
-- remove collisions
-- benchmarks
+- benchmarks (setup)
 - APi
