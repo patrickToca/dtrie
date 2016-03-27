@@ -9,7 +9,6 @@ func hash(value interface{}) uint32 {
 	switch value.(type) {
 	case int:
 		return uint32(value.(int))
-		//return uint32(0xffffffff) // for testing collisions
 	}
 	hasher := fnv.New32a()
 	hasher.Write([]byte(fmt.Sprintf("%#v", value)))

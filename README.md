@@ -2,5 +2,6 @@
 Dynamic Hash Array Mapped Trie
 
 ## TODO
-- iteraion
+- remove collisions
+- benchmarks
 - APi

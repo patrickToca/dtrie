@@ -103,13 +103,15 @@ func get(n *node, keyHash uint32, key interface{}) Entry {
 		return n.entries[index]
 	}
 	if n.level == 6 { // get from collisionNode
+		if n.entries[index] == nil {
+			return nil
+		}
 		cNode := n.entries[index].(*collisionNode)
 		for _, e := range cNode.entries {
 			if e.Key() == key {
 				return e
 			}
 		}
-		return nil
 	}
 	if hasBit(n.nodeMap, index) {
 		return get(n.entries[index].(*node), keyHash, key)
@@ -173,17 +175,19 @@ func pushEntries(n *node, stop <-chan struct{}, out chan Entry) {
 		case <-stop:
 			return
 		default:
-			if hasBit(n.dataMap, uint32(i)) {
+			index := uint32(i)
+			switch {
+			case hasBit(n.dataMap, index):
 				out <- e
-			} else if hasBit(n.nodeMap, uint32(i)) {
+			case hasBit(n.nodeMap, index):
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					pushEntries(n.entries[i].(*node), stop, out)
+					pushEntries(e.(*node), stop, out)
 				}()
-			} else if n.level == 6 {
-				cNode := e.(*collisionNode)
-				for _, ce := range cNode.entries {
+				wg.Wait()
+			case n.level == 6 && e != nil:
+				for _, ce := range n.entries[index].(*collisionNode).entries {
 					select {
 					case <-stop:
 						return
@@ -194,5 +198,4 @@ func pushEntries(n *node, stop <-chan struct{}, out chan Entry) {
 			}
 		}
 	}
-	wg.Wait()
 }
