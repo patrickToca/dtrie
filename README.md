@@ -1,6 +1,4 @@
 # dtrie
-Dynamic Persistent Hash Array Mapped Trie
-
 a persistent hash trie that dynamically expands or shrinks to provide efficient memory allocation.
 
 ## Big O
