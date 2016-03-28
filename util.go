@@ -44,8 +44,32 @@ func popCount(bitmap uint32) int {
 
 func defaultHasher(value interface{}) uint32 {
 	switch value.(type) {
+	case uint8:
+		return uint32(value.(uint8))
+	case uint16:
+		return uint32(value.(uint16))
+	case uint32:
+		return value.(uint32)
+	case uint64:
+		return uint32(value.(uint64))
+	case int8:
+		return uint32(value.(int8))
+	case int16:
+		return uint32(value.(int16))
+	case int32:
+		return uint32(value.(int32))
+	case int64:
+		return uint32(value.(int64))
+	case uint:
+		return uint32(value.(uint))
 	case int:
 		return uint32(value.(int))
+	case uintptr:
+		return uint32(value.(uintptr))
+	case float32:
+		return uint32(value.(float32))
+	case float64:
+		return uint32(value.(float64))
 	}
 	hasher := fnv.New32a()
 	hasher.Write([]byte(fmt.Sprintf("%#v", value)))
