@@ -1,3 +1,7 @@
+// Copyright (c) 2016, Theodore Butler
+// Use of this source code is governed by a BSD 2-Caluse
+// license that can be found in the LICENSE file.
+
 package dtrie
 
 import (

@@ -1,3 +1,7 @@
+// Copyright (c) 2016, Theodore Butler
+// Use of this source code is governed by a BSD 2-Caluse
+// license that can be found in the LICENSE file.
+
 package dtrie
 
 import (
@@ -147,6 +151,7 @@ func TestSize(t *testing.T) {
 }
 
 func BenchmarkInsert(b *testing.B) {
+	b.ReportAllocs()
 	n := emptyNode(0, 32)
 	b.ResetTimer()
 	for i := b.N; i > 0; i-- {
@@ -155,6 +160,7 @@ func BenchmarkInsert(b *testing.B) {
 }
 
 func BenchmarkGet(b *testing.B) {
+	b.ReportAllocs()
 	n := insertTest(nil, defaultHasher, b.N)
 	b.ResetTimer()
 	for i := b.N; i > 0; i-- {
@@ -163,6 +169,7 @@ func BenchmarkGet(b *testing.B) {
 }
 
 func BenchmarkRemove(b *testing.B) {
+	b.ReportAllocs()
 	n := insertTest(nil, defaultHasher, b.N)
 	b.ResetTimer()
 	for i := b.N; i > 0; i-- {
@@ -171,6 +178,7 @@ func BenchmarkRemove(b *testing.B) {
 }
 
 func BenchmarkUpdate(b *testing.B) {
+	b.ReportAllocs()
 	n := insertTest(nil, defaultHasher, b.N)
 	b.ResetTimer()
 	for i := b.N; i > 0; i-- {

@@ -1,3 +1,13 @@
+// Copyright (c) 2016, Theodore Butler
+// Use of this source code is governed by a BSD 2-Caluse
+// license that can be found in the LICENSE file.
+
+// Package dtrie provides an implementation of the dtrie data structure, which
+// is a persistent hash trie that dynamically expands or shrinks to provide
+// efficient memory allocation. This data structure is based on the papers
+// Ideal Hash Trees by Phil Bagwell and Optimizing Hash-Array Mapped Tries for
+// Fast and Lean Immutable JVM Collections by Michael J. Steindorfer and
+// Jurgen J. Vinju
 package dtrie
 
 import (
