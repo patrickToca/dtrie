@@ -1,5 +1,7 @@
-# dtrie
-a persistent hash trie that dynamically expands or shrinks to provide efficient memory allocation.
+# dtrie 
+[![Go Report Card](https://goreportcard.com/badge/github.com/theodus/dtrie)](https://goreportcard.com/report/github.com/theodus/dtrie)
+
+a persistent hash trie that dynamically expands or shrinks to provide efficient memory allocation
 
 ## Big O
 - O(log32(n)) get, remove, and update
