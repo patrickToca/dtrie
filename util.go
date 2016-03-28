@@ -5,16 +5,6 @@ import (
 	"hash/fnv"
 )
 
-func hash(value interface{}) uint32 {
-	switch value.(type) {
-	case int:
-		return uint32(value.(int))
-	}
-	hasher := fnv.New32a()
-	hasher.Write([]byte(fmt.Sprintf("%#v", value)))
-	return hasher.Sum32()
-}
-
 func mask(hash, level uint32) uint32 {
 	return (hash >> (5 * level)) & 0x01f
 }
@@ -40,4 +30,14 @@ func popCount(bitmap uint32) int {
 	bitmap &= 0x0f0f0f0f
 	bitmap *= 0x01010101
 	return int(byte(bitmap >> 24))
+}
+
+func defaultHasher(value interface{}) uint32 {
+	switch value.(type) {
+	case int:
+		return uint32(value.(int))
+	}
+	hasher := fnv.New32a()
+	hasher.Write([]byte(fmt.Sprintf("%#v", value)))
+	return hasher.Sum32()
 }

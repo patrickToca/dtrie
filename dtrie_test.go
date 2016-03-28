@@ -21,11 +21,11 @@ func TestPopCount(t *testing.T) {
 	}
 }
 
-func TestDefaultHash(t *testing.T) {
+func TestDefaultHasher(t *testing.T) {
 	assert.Equal(t,
-		hash(map[int]string{11234: "foo"}),
-		hash(map[int]string{11234: "foo"}))
-	assert.NotEqual(t, hash("foo"), hash("bar"))
+		defaultHasher(map[int]string{11234: "foo"}),
+		defaultHasher(map[int]string{11234: "foo"}))
+	assert.NotEqual(t, defaultHasher("foo"), defaultHasher("bar"))
 }
 
 type testEntry struct {
@@ -55,7 +55,7 @@ func collisionHash(key interface{}) uint32 {
 }
 
 func TestInsert(t *testing.T) {
-	insertTest(t, hash, 10000)
+	insertTest(t, defaultHasher, 10000)
 	insertTest(t, collisionHash, 1000)
 }
 
@@ -68,7 +68,7 @@ func insertTest(t *testing.T, hashfunc func(interface{}) uint32, count int) *nod
 }
 
 func TestGet(t *testing.T) {
-	getTest(t, hash, 10000)
+	getTest(t, defaultHasher, 10000)
 	getTest(t, collisionHash, 1000)
 }
 
@@ -81,7 +81,7 @@ func getTest(t *testing.T, hashfunc func(interface{}) uint32, count int) {
 }
 
 func TestRemove(t *testing.T) {
-	removeTest(t, hash, 10000)
+	removeTest(t, defaultHasher, 10000)
 	removeTest(t, collisionHash, 1000)
 }
 
@@ -98,7 +98,7 @@ func removeTest(t *testing.T, hashfunc func(interface{}) uint32, count int) {
 }
 
 func TestUpdate(t *testing.T) {
-	updateTest(t, hash, 10000)
+	updateTest(t, defaultHasher, 10000)
 	updateTest(t, collisionHash, 1000)
 }
 
@@ -110,7 +110,7 @@ func updateTest(t *testing.T, hashfunc func(interface{}) uint32, count int) {
 }
 
 func TestIterate(t *testing.T) {
-	n := insertTest(t, hash, 10000)
+	n := insertTest(t, defaultHasher, 10000)
 	echan := iterate(n, nil)
 	var c int64
 	for range echan {
@@ -140,34 +140,40 @@ func TestIterate(t *testing.T) {
 	assert.Equal(t, int64(1000), c)
 }
 
+func TestSize(t *testing.T) {
+	n := insertTest(t, defaultHasher, 10000)
+	d := &Dtrie{n, defaultHasher}
+	assert.Equal(t, 10000, d.Size())
+}
+
 func BenchmarkInsert(b *testing.B) {
 	n := emptyNode(0, 32)
 	b.ResetTimer()
 	for i := b.N; i > 0; i-- {
-		n = insert(n, &testEntry{hash(i), i, i})
+		n = insert(n, &testEntry{defaultHasher(i), i, i})
 	}
 }
 
 func BenchmarkGet(b *testing.B) {
-	n := insertTest(nil, hash, b.N)
+	n := insertTest(nil, defaultHasher, b.N)
 	b.ResetTimer()
 	for i := b.N; i > 0; i-- {
-		get(n, hash(i), i)
+		get(n, defaultHasher(i), i)
 	}
 }
 
 func BenchmarkRemove(b *testing.B) {
-	n := insertTest(nil, hash, b.N)
+	n := insertTest(nil, defaultHasher, b.N)
 	b.ResetTimer()
 	for i := b.N; i > 0; i-- {
-		n = remove(n, hash(i), i)
+		n = remove(n, defaultHasher(i), i)
 	}
 }
 
 func BenchmarkUpdate(b *testing.B) {
-	n := insertTest(nil, hash, b.N)
+	n := insertTest(nil, defaultHasher, b.N)
 	b.ResetTimer()
 	for i := b.N; i > 0; i-- {
-		n = insert(n, &testEntry{hash(i), i, -i})
+		n = insert(n, &testEntry{defaultHasher(i), i, -i})
 	}
 }
